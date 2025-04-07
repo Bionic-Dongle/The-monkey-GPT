@@ -7,8 +7,8 @@
 // @match        https://chat.openai.com/*
 // @match        https://chatgpt.com/*
 // @grant        none
-// @updateURL   https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/script.js
-// @downloadURL https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/script.js
+// @updateURL   https://raw.githubusercontent.com/Bionic-Dongle/The-monkey-GPT/main/tampermonkey_script.js
+// @downloadURL https://raw.githubusercontent.com/Bionic-Dongle/The-monkey-GPT/main/tampermonkey_script.js
 // ==/UserScript==
 
 (function () {
