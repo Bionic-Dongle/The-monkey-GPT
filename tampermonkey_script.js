@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         ChatGPT Prompt Toolbar (Clean Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.6
+// @version      4.7
 // @description  Prompt toolbar with copy-to-clipboard and DevGPT URL manager
 // @match        https://chat.openai.com/*
 // @match        https://chatgpt.com/*
