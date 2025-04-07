@@ -1,3 +1,4 @@
+// Updated from GitHub
 // ==UserScript==
 // @name         ChatGPT Prompt Toolbar (Clean Version)
 // @namespace    http://tampermonkey.net/
