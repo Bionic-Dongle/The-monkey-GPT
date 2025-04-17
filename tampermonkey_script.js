@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ChatGPT Prompt Toolbar (Clean Version)
 // @namespace    http://tampermonkey.net/
-// @version      4.8
-// @description  Prompt toolbar with copy-to-clipboard, re-orderable prompts, and DevGPT URL manager
+// @version      4.7
+// @description  Prompt toolbar with copy-to-clipboard and DevGPT URL manager
 // @match        https://chat.openai.com/*
 // @match        https://chatgpt.com/*
 // @grant        none
@@ -69,14 +69,153 @@
 
         const style = document.createElement('style');
         style.textContent = `
-            .gpt-toolbar { /* unchanged styles */ }
-            /* Keep all the existing styles here... */
-
-            .gpt-dropdown-item.draggable {
-                cursor: grab;
+            .gpt-toolbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 50px;
+                background: #1e1e1e;
+                color: #eee;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 0 10px;
+                z-index: 9999;
+                border-bottom: 1px solid #333;
+                overflow-x: auto;
             }
-            .gpt-dropdown-item.drag-over {
-                background: #555 !important;
+            .gpt-dropdown-wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+            .gpt-dropdown-button {
+                background: #2a2a2a;
+                color: #ddd;
+                border: 1px solid #444;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                position: relative;
+                min-width: 100px;
+                text-align: center;
+                white-space: nowrap;
+            }
+            .gpt-dropdown-button::after {
+                content: "▼";
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 10px;
+                color: #888;
+            }
+            .gpt-dropdown-list {
+                position: fixed;
+                top: 55px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+                max-height: 50vh;
+                background: #2a2a2a;
+                color: #fff;
+                border: 1px solid #444;
+                border-radius: 6px;
+                padding: 15px;
+                display: none;
+                flex-direction: column;
+                z-index: 10000;
+                overflow-y: auto;
+                word-break: break-word;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            }
+            .gpt-dropdown-list.show {
+                display: flex;
+            }
+            .gpt-dropdown-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 8px;
+                white-space: normal;
+                border-bottom: 1px solid #3a3a3a;
+                user-select: text;
+            }
+            .gpt-dropdown-item:hover {
+                background: #444;
+            }
+            .gpt-copy-button {
+                background: #444;
+                color: #ccc;
+                border: 1px solid #555;
+                border-radius: 3px;
+                font-size: 12px;
+                padding: 2px 6px;
+                cursor: pointer;
+                user-select: none;
+                white-space: nowrap;
+            }
+            .gpt-delete-button {
+                background: #aa3333;
+                color: #fff;
+                border: 1px solid #882222;
+                border-radius: 3px;
+                font-size: 12px;
+                padding: 2px 6px;
+                cursor: pointer;
+                user-select: none;
+                white-space: nowrap;
+                margin-right: 8px;
+            }
+            .gpt-dropdown-controls {
+                margin-top: 10px;
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+            .gpt-control-button {
+                background: #555;
+                color: #fff;
+                border: 1px solid #666;
+                border-radius: 4px;
+                padding: 5px 10px;
+                cursor: pointer;
+            }
+            .gpt-dev-button {
+                margin-left: auto;
+                background: #444;
+                color: #fff;
+                border: 1px solid #666;
+                border-radius: 4px;
+                padding: 6px 12px;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+            .gpt-dev-modal {
+                position: fixed;
+                top: 60px;
+                right: 10px;
+                width: 320px;
+                max-height: 60vh;
+                background: #2a2a2a;
+                border: 1px solid #444;
+                border-radius: 6px;
+                padding: 10px;
+                z-index: 10001;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .gpt-dev-modal a {
+                color: #9cf;
+                text-decoration: none;
+                word-break: break-word;
+            }
+            .gpt-dev-modal a:hover {
+                text-decoration: underline;
             }
         `;
         document.head.appendChild(style);
@@ -100,36 +239,7 @@
                 list.innerHTML = '';
                 prompts[category].forEach((prompt, index) => {
                     const item = document.createElement('div');
-                    item.className = 'gpt-dropdown-item draggable';
-                    item.draggable = true;
-
-                    item.ondragstart = (e) => {
-                        e.dataTransfer.setData("text/plain", index);
-                        item.classList.add("dragging");
-                    };
-
-                    item.ondragover = (e) => {
-                        e.preventDefault();
-                        item.classList.add("drag-over");
-                    };
-
-                    item.ondragleave = () => {
-                        item.classList.remove("drag-over");
-                    };
-
-                    item.ondrop = (e) => {
-                        e.preventDefault();
-                        item.classList.remove("drag-over");
-                        const draggedIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
-                        const targetIndex = index;
-
-                        if (draggedIndex !== targetIndex) {
-                            const movedItem = prompts[category].splice(draggedIndex, 1)[0];
-                            prompts[category].splice(targetIndex, 0, movedItem);
-                            savePrompts(prompts);
-                            refreshList();
-                        }
-                    };
+                    item.className = 'gpt-dropdown-item';
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'gpt-delete-button';
